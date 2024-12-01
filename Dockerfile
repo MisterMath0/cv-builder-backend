@@ -22,4 +22,4 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Simply use railway's default port binding
-CMD uvicorn app.main:app --host 0.0.0.0
+CMD uvicorn app.main:app --reload
