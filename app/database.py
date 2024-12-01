@@ -1,19 +1,23 @@
 # app/database.py
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from .config import settings
+from sqlalchemy.ext.declarative import declarative_base
+import os
+from dotenv import load_dotenv
 
-# Create database engine
-engine = create_engine(settings.DATABASE_URL)
+load_dotenv()
 
-# Create SessionLocal class
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Railway provides PostgreSQL URLs starting with 'postgres://'
+# SQLAlchemy requires 'postgresql://'
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create Base class
 Base = declarative_base()
 
-# Dependency
 def get_db():
     db = SessionLocal()
     try:
