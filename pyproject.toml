@@ -1,0 +1,31 @@
+# backend/pyproject.toml
+[tool.poetry]
+name = "cv-builder-backend"
+version = "0.1.0"
+description = "CV Builder Backend API"
+authors = ["Your Name <your.email@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.104.1"
+uvicorn = "^0.24.0"
+supabase = "^2.0.0"
+python-multipart = "^0.0.6"
+python-dotenv = "^1.0.0"
+pydantic = "^2.4.2"
+pydantic-settings = "^2.0.3"
+httpx = "^0.24.0"
+python-dateutil = "^2.8.2"
+reportlab = "^4.0.7"
+aiofiles = "^23.2.1"
+python-magic = "^0.4.27"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.4.3"
+black = "^23.10.1"
+isort = "^5.12.0"
+flake8 = "^6.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

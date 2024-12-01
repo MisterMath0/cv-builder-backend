@@ -1,0 +1,185 @@
+<!-- app/templates/cv/professional.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            color: #333;
+        }
+
+        /* Header/Contact section */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 20px;
+        }
+
+        .name {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .contact-info {
+            font-size: 14px;
+        }
+
+        /* Section styling */
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 1px solid #bdc3c7;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+        }
+
+        /* Experience/Education items */
+        .item {
+            margin-bottom: 20px;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .item-title {
+            font-weight: bold;
+        }
+
+        .item-date {
+            color: #7f8c8d;
+        }
+
+        .item-subtitle {
+            font-style: italic;
+            color: #34495e;
+        }
+
+        /* Skills section */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        /* Languages section */
+        .languages-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .language-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header/Contact Section -->
+    <div class="header">
+        <div class="name">{{ contact.name }}</div>
+        <div class="contact-info">
+            {{ contact.email }} | {{ contact.phone }} | {{ contact.location }}
+            {% if contact.linkedin or contact.github %}
+            <br>
+            {% if contact.linkedin %}LinkedIn: {{ contact.linkedin }}{% endif %}
+            {% if contact.github %} | GitHub: {{ contact.github }}{% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Profile Section -->
+    {% if profile %}
+    <div class="section">
+        <div class="section-title">Profile</div>
+        <div>{{ profile | safe }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Experience Section -->
+    {% if experience %}
+    <div class="section">
+        <div class="section-title">Professional Experience</div>
+        {% for exp in experience %}
+        <div class="item">
+            <div class="item-header">
+                <div class="item-title">{{ exp.position }}</div>
+                <div class="item-date">
+                    {{ exp.startDate }} - {% if exp.current %}Present{% else %}{{ exp.endDate }}{% endif %}
+                </div>
+            </div>
+            <div class="item-subtitle">{{ exp.company }}</div>
+            <div>{{ exp.description | safe }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Education Section -->
+    {% if education %}
+    <div class="section">
+        <div class="section-title">Education</div>
+        {% for edu in education %}
+        <div class="item">
+            <div class="item-header">
+                <div class="item-title">{{ edu.degree }}</div>
+                <div class="item-date">
+                    {{ edu.startDate }} - {% if edu.current %}Present{% else %}{{ edu.endDate }}{% endif %}
+                </div>
+            </div>
+            <div class="item-subtitle">{{ edu.institution }}</div>
+            <div>{{ edu.description | safe }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Skills Section -->
+    {% if skills %}
+    <div class="section">
+        <div class="section-title">Skills</div>
+        <div>{{ skills | safe }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Languages Section -->
+    {% if languages %}
+    <div class="section">
+        <div class="section-title">Languages</div>
+        <div class="languages-list">
+            {% for lang in languages %}
+            <div class="language-item">
+                <span class="item-title">{{ lang.name }}</span>
+                <span>{{ lang.level }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Hobbies Section -->
+    {% if hobbies %}
+    <div class="section">
+        <div class="section-title">Interests & Hobbies</div>
+        <div>{{ hobbies | safe }}</div>
+    </div>
+    {% endif %}
+</body>
+</html>
