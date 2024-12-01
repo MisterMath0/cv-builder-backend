@@ -21,5 +21,10 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Simply use railway's default port binding
-CMD uvicorn app.main:app --reload
+# Create an entrypoint script
+RUN echo '#!/bin/sh\n\
+uvicorn app.main:app --host 0.0.0.0 --port 8000\n'\
+> ./entrypoint.sh && chmod +x ./entrypoint.sh
+
+# Use the entrypoint script
+ENTRYPOINT ["./entrypoint.sh"]
