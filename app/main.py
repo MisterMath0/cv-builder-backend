@@ -1,4 +1,5 @@
 # app/main.py
+from datetime import datetime
 from app.api import cv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +39,7 @@ app.add_middleware(
 async def health_check():
     return {
         "status": "healthy",
-        "version": settings.VERSION,
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "cv-builder-api",
         "database": "connected"
     }
