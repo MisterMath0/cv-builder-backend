@@ -21,11 +21,5 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Create start script with logging
-RUN echo '#!/bin/bash\n\
-echo "Starting application..."\n\
-echo "PORT: $PORT"\n\
-uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}" --log-level debug' > start.sh && \
-    chmod +x start.sh
-
-CMD ["./start.sh"]
+# Simply use railway's default port binding
+CMD uvicorn app.main:app --host 0.0.0.0
