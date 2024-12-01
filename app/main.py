@@ -34,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.route("/")
+def home():
+    return "Backend is running!"
 
 @app.get("/health")
 async def health_check():
