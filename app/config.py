@@ -1,6 +1,9 @@
 # app/config.py
 from pydantic.v1 import BaseSettings
 from typing import Optional
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 class Settings(BaseSettings):
     # Database
@@ -14,7 +17,7 @@ class Settings(BaseSettings):
     # Application
     PROJECT_NAME: str = "CV Builder API"
     VERSION: str = "1.0.0"
-    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL")
     
     # Email Settings (all optional)
     MAIL_USERNAME: Optional[str] = None

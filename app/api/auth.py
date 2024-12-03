@@ -1,6 +1,8 @@
 # app/api/auth.py
 from datetime import timedelta
 from typing import Optional
+
+from yarl import Query
 from fastapi import APIRouter, HTTPException, Depends, status, Response, Request
 from app.middleware.auth import get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
@@ -10,6 +12,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, constr
 from app.models.user import User
 from ..utils.auth import (
+    TOKEN_TYPES,
     clear_token_cookie,
     create_token,
     get_password_hash,
@@ -286,32 +289,32 @@ async def refresh_token(
             "refresh_token": new_refresh_token
         }
     )
+# app/api/auth.py
 
 @router.get("/verify-email", response_model=ResponseModel)
 async def verify_email(token: str, db: Session = Depends(get_db)):
     try:
-        # Verify the token, expecting a verification type token
-        payload = verify_token(token, expected_type="verification")
-        email = payload.get("sub")  # Extract the email from the payload
+        # This matches your verify_token function signature and token creation
+        payload = verify_token(
+            token=token, 
+            secret_key=settings.SECRET_KEY,
+            algorithm=settings.ALGORITHM,
+            expected_type=TOKEN_TYPES["verification"]
+        )
+        
+        email = payload.get("sub")
         user = db.query(User).filter(User.email == email).first()
         
         if not user:
             raise HTTPException(status_code=404, detail="User not found.")
         
-        # Log the user's current status
-        print(f"User found: {user.email}, is_active: {user.is_active}")  # Add this line for debugging
-        
         if user.is_active:
             return ResponseModel(success=False, message="Email is already verified.")
         
-        # Mark user as active
         user.is_active = True
         db.commit()
-        db.refresh(user)  # Refresh to get the updated user data
+        db.refresh(user)
         
-        # Log if the commit was successful
-        if not user.is_active:
-            raise HTTPException(status_code=500, detail="Failed to verify email.")  # Add this check
         return ResponseModel(success=True, message="Email verified successfully.")
     
     except HTTPException as e:
