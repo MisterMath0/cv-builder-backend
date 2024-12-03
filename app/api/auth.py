@@ -107,11 +107,11 @@ async def register(
     db.refresh(new_user)
 
     # Generate verification token
-    verification_token = create_access_token(
-        data={"sub": user.email, "type": "verification"},
-        expires_delta=timedelta(hours=24)
-    )
-
+    verification_token = create_token(
+            data={"sub": request.email},
+            token_type="verification",
+            expires_delta=timedelta(hours=48)
+        )
     # Send verification email
     await send_verification_email(user.email, verification_token)
 
