@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 import logging
-from ..models.cv import CV
+from ..models.database import CV
 from datetime import datetime
 
 logger = logging.getLogger(__name__)

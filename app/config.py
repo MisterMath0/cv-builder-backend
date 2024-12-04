@@ -3,6 +3,8 @@ from pydantic.v1 import BaseSettings
 from typing import Optional
 from dotenv import load_dotenv
 import os
+from pydantic import BaseModel
+
 load_dotenv()
 
 class Settings(BaseSettings):
@@ -32,5 +34,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        arbitrary_types_allowed = True
 
 settings = Settings()
