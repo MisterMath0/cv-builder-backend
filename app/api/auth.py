@@ -110,7 +110,7 @@ async def register(
 
     # Generate verification token
     verification_token = create_token(
-            data={"sub": request.email},
+            data={"sub": user.email},
             token_type="verification",
             expires_delta=timedelta(hours=48)
         )
@@ -177,7 +177,7 @@ async def login(
         if not db_user.is_active:
             print("Error: Email not verified")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Please verify your email first"
             )
         
