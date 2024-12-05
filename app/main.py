@@ -34,6 +34,7 @@ allowed_origins = [
     "https://cv-builder-frontend-six.vercel.app", # Frontend URL
     "https://cv-builder-frontend-git-main-guy-mathieu-fokos-projects.vercel.app"
     "localhost",
+    FRONTEND_URL
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -42,7 +43,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-@app.route("/")
+@app.route("")
 def home():
     return "Backend is running!"
 
