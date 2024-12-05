@@ -7,6 +7,9 @@ from .config import settings
 from .database import engine
 from .models import Base
 from app.api import auth
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 
 
@@ -18,7 +21,7 @@ app = FastAPI(
     version=settings.VERSION
 )
 
-
+FRONTEND_URL: str = os.getenv("FRONTEND_URL")
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -29,7 +32,7 @@ app.include_router(cv.router)
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

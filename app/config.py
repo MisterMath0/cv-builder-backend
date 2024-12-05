@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY = "e9494e7349ea0eb022e6dff0ae4ec71beff264d2e0c4a6f4cce3e9ca94ccf73a"
     ALGORITHM = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 300
     
     # Application
     PROJECT_NAME: str = "CV Builder API"

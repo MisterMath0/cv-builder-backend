@@ -1,37 +1,53 @@
 {# app/templates/cv/professional.html #}
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV Preview</title>
     <style>
-        /* Previous styles remain the same */
+        /* General Body and Layout */
         body {
             font-family: 'Arial', sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
             color: #333;
         }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
 
+        /* Header Section */
         .header {
+            text-align: center;
             margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
         }
 
-        .contact-info {
-            margin-bottom: 25px;
+        .header h1 {
+            font-size: 36px;
+            color: #2c3e50;
+            margin-bottom: 10px;
         }
 
-        .contact-info p {
-            margin: 5px 0;
+        .header .contact-info {
+            font-size: 16px;
             color: #555;
         }
 
-        .section {
-            margin-bottom: 30px;
+        .header .contact-info p {
+            margin: 5px 0;
         }
 
+        /* Section Titles */
         .section-title {
             font-size: 20px;
             font-weight: bold;
@@ -42,23 +58,80 @@
             text-transform: uppercase;
         }
 
-        .experience-item, .education-item {
-            margin-bottom: 20px;
+        /* Experience and Education Sections */
+        .section {
+            margin-bottom: 30px;
         }
 
-        .date {
+        .item {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item h3 {
+            font-size: 18px;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .item .date {
             color: #666;
             font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .item .description {
+            color: #555;
+            font-size: 15px;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+
+        /* Skills Table */
+        .skills-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .skills-table th, .skills-table td {
+            padding: 8px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .skills-table th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Language Section */
+        .languages ul {
+            padding-left: 20px;
+            margin: 0;
+            list-style-type: square;
+        }
+
+        .languages li {
+            font-size: 16px;
             margin-bottom: 5px;
         }
 
-        .description {
-            margin-top: 8px;
-            color: #555;
+        /* Footer */
+        .footer {
+            margin-top: 40px;
+            font-size: 14px;
+            text-align: center;
+            color: #777;
         }
+
     </style>
 </head>
 <body>
+
+<div class="container">
     {% for section in cv.sections %}
         {% if section.type == 'contact' %}
         <div class="header">
@@ -71,7 +144,7 @@
                     <p>{{ section.content.phone }}</p>
                 {% endif %}
                 {% if section.content.email %}
-                    <p><a href="mailto:{{ section.content.email }}">{{ section.content.email }}</a></p>
+                    <p><a href="mailto:{{ section.content.email }}" style="color: #3498db;">{{ section.content.email }}</a></p>
                 {% endif %}
             </div>
         </div>
@@ -81,7 +154,7 @@
         <div class="section">
             <h2 class="section-title">{{ section.title }}</h2>
             {% for exp in section.content %}
-            <div class="experience-item">
+            <div class="item">
                 <div class="date">
                     {% if exp.startDate %}
                         {{ exp.startDate.strftime('%B %Y') if exp.startDate else '' }} - 
@@ -92,7 +165,7 @@
                         {% endif %}
                     {% endif %}
                 </div>
-                <h3>{% if exp.position %}{{ exp.position }}{% endif %}{% if exp.company %} at {{ exp.company }}{% endif %}</h3>
+                <h3>{{ exp.position }}{% if exp.company %} at {{ exp.company }}{% endif %}</h3>
                 <div class="description">{{ exp.description | safe }}</div>
             </div>
             {% endfor %}
@@ -103,7 +176,7 @@
         <div class="section">
             <h2 class="section-title">{{ section.title }}</h2>
             {% for edu in section.content %}
-            <div class="education-item">
+            <div class="item">
                 <div class="date">
                     {% if edu.startDate %}
                         {{ edu.startDate.strftime('%B %Y') if edu.startDate else '' }} - 
@@ -125,16 +198,29 @@
         {% if section.type == 'skills' %}
         <div class="section">
             <h2 class="section-title">{{ section.title }}</h2>
-            <div class="description">{{ section.content | safe }}</div>
+            <table class="skills-table">
+                <tr>
+                    <th>Skill</th>
+                    <th>Proficiency</th>
+                </tr>
+                {% for skill in section.content %}
+                <tr>
+                    <td>{{ skill.name }}</td>
+                    <td>{{ skill.proficiency }}</td>
+                </tr>
+                {% endfor %}
+            </table>
         </div>
         {% endif %}
 
         {% if section.type == 'languages' %}
-        <div class="section">
+        <div class="section languages">
             <h2 class="section-title">{{ section.title }}</h2>
-            {% for lang in section.content %}
-                <div>{{ lang.name }} - {{ lang.level }}</div>
-            {% endfor %}
+            <ul>
+                {% for lang in section.content %}
+                    <li>{{ lang.name }} - {{ lang.level }}</li>
+                {% endfor %}
+            </ul>
         </div>
         {% endif %}
 
@@ -152,5 +238,11 @@
         </div>
         {% endif %}
     {% endfor %}
+</div>
+
+<div class="footer">
+    <p>Generated by {{ cv.generated_by }}</p>
+</div>
+
 </body>
 </html>
