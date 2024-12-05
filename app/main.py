@@ -43,7 +43,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-@app.route("")
+@app.route("/")
 def home():
     return "Backend is running!"
 
