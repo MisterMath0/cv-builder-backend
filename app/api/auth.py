@@ -1,9 +1,11 @@
 # app/api/auth.py
 from datetime import timedelta
 from typing import Optional
-
+from app.config import settings
 from yarl import Query
 from fastapi import APIRouter, HTTPException, Depends, status, Response, Request
+from ..models.auth import LoginRequest, AuthResponse
+from ..utils.redis import blacklist_token, check_redis_connection, is_token_blacklisted
 from app.middleware.auth import get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
@@ -28,7 +30,7 @@ from ..utils.auth import (
 )
 from app.database import get_db
 from app.middleware.auth import get_current_user
-from app.config import settings
+
 from app.models.responses import ResponseModel
 from app.utils.auth import revoke_token
 from fastapi.security import OAuth2PasswordBearer
@@ -194,10 +196,12 @@ async def login(
         db_user.last_login = func.now()  # Correct usage
         db.commit()
 
-        # Create tokens
+        # Create tokens using db_user (which has the 'id')
         print("Creating access and refresh tokens")
-        access_token = create_access_token(data={"sub": db_user.email})
-        refresh_token = create_refresh_token(data={"sub": db_user.email})
+        
+        # Convert UUID to string before passing it to the token creation function
+        access_token = create_access_token(str(db_user.id))  # Convert UUID to string
+        refresh_token = create_refresh_token(str(db_user.id))  # Convert UUID to string
 
         # Set cookies if remember_me
         if getattr(user, 'remember_me', False):
@@ -220,7 +224,7 @@ async def login(
                 "refresh_token": refresh_token,
                 "token_type": "bearer",
                 "user": {
-                    "id": str(db_user.id),
+                    "id": str(db_user.id),  # db_user has the 'id', convert UUID to string here
                     "email": db_user.email,
                     "full_name": db_user.full_name,
                 }
@@ -240,7 +244,7 @@ async def login(
         )
 
 @router.post("/refresh", response_model=ResponseModel)
-async def refresh_token(
+async def refresh_token_async(
     request: Request,
     response: Response,
     refresh_token: Optional[str] = None,
@@ -289,7 +293,32 @@ async def refresh_token(
             "refresh_token": new_refresh_token
         }
     )
-# app/api/auth.py
+@router.post("/refresh-token", response_model=AuthResponse)
+def refresh_token(
+    refresh_token: str, db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using a valid refresh token.
+    """
+    try:
+        # Verify the refresh token (similar to access token verification)
+        payload = verify_token(refresh_token, expected_type="refresh")
+
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid refresh token")
+
+        # Find the user associated with the refresh token
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
+
+        # Create a new access token and return it along with the refresh token
+        new_access_token = create_access_token(user_id)
+        return {"access_token": new_access_token, "refresh_token": refresh_token, "user": user}
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired refresh token")
 
 @router.get("/verify-email", response_model=ResponseModel)
 async def verify_email(token: str, db: Session = Depends(get_db)):
@@ -384,16 +413,57 @@ async def resend_verification(
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/logout")
-async def logout(token: str = Depends(oauth2_scheme)):
+async def logout(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme)
+):
     try:
-        # Revoke the token (you can implement this according to your storage method, e.g., blacklist)
-        revoke_token(token)
-        response = JSONResponse(content={"message": "Successfully logged out"}, status_code=200)
-        response = clear_token_cookie(response)
+        # Check Redis connection
+        if not check_redis_connection():
+            raise HTTPException(
+                status_code=500,
+                detail="Token blacklist service unavailable"
+            )
+
+        # Check if already blacklisted
+        if is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=400,
+                detail="Token is already revoked"
+            )
+        
+        # Blacklist the token
+        if not blacklist_token(token, settings.SECRET_KEY):
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to blacklist token"
+            )
+        
+        response = JSONResponse(
+            content={
+                "success": True,
+                "message": "Successfully logged out"
+            }
+        )
+        
+        # Clear cookies
+        response.delete_cookie("access_token", path="/")
+        response.delete_cookie("refresh_token", path="/")
+        
+        return response
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Error during logout") 
-    
-         
+        print(f"Logout error: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error during logout: {str(e)}"
+        )
+@router.get("/verify_user")
+async def verify_token_async(current_user: User = Depends(verify_token)):
+    return {"valid": True}
+      
 @router.get("/protected-route")
 def protected_route(current_user: User = Depends(get_current_user)):
     """

@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 import logging
-from ..models.database import CV
+from ..models.database import CV, Section
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -34,8 +34,8 @@ class CVService:
     async def get_cv(self, cv_id: str, user_id: str) -> CV:
         """Get CV by ID"""
         cv = self.db.query(CV).filter(
-            CV.id == cv_id,
-            CV.user_id == user_id
+            CV.user_id == user_id,
+            CV.id == cv_id
         ).first()
         if not cv:
             raise HTTPException(status_code=404, detail="CV not found")
@@ -48,9 +48,30 @@ class CVService:
     async def update_cv(self, cv_id: str, user_id: str, cv_data: Dict[Any, Any]) -> CV:
         """Update CV data"""
         try:
-            cv = await self.get_cv(cv_id, user_id)
-            cv.cv_data = cv_data
+            # Get the CV
+            cv = self.db.query(CV).filter(CV.id == cv_id, CV.user_id == user_id).first()
+            if not cv:
+                raise HTTPException(status_code=404, detail="CV not found")
+
+            # Update CV fields
+            cv.template_id = cv_data.get("template_id")
+            cv.status = cv_data.get("status")
             cv.updated_at = datetime.utcnow()
+
+            # Delete existing sections
+            self.db.query(Section).filter(Section.cv_id == cv_id).delete()
+
+            # Add new sections
+            for section_data in cv_data.get("sections", []):
+                section = Section(
+                    cv_id=cv_id,
+                    type=section_data["type"],
+                    title=section_data["title"],
+                    content=section_data["content"],
+                    order_index=section_data["order_index"]
+                )
+                self.db.add(section)
+
             self.db.commit()
             self.db.refresh(cv)
             return cv

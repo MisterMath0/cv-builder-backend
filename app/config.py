@@ -10,10 +10,14 @@ load_dotenv()
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
+    # settings.py (add Redis configuration)
+    REDIS_HOST = "localhost"  # Or your Redis host if using a remote Redis instance
+    REDIS_PORT = 6379  # Default Redis port
+
     
     # Security
-    SECRET_KEY: str
-    ALGORITHM: str = "HS256"
+    SECRET_KEY = "e9494e7349ea0eb022e6dff0ae4ec71beff264d2e0c4a6f4cce3e9ca94ccf73a"
+    ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Application

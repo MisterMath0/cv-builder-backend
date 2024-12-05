@@ -9,6 +9,8 @@ import secrets
 from .email import send_verification_email_
 import logging
 from fastapi.responses import JSONResponse
+from fastapi import Response
+
 
 # Password hashing config
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -121,11 +123,25 @@ def verify_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"{ERROR_MESSAGES['invalid_token']} {str(e)}"
         )
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    return create_token(data, TOKEN_TYPES["access"], expires_delta)
+def create_access_token(user_id: str) -> str:
+    """
+    Create an access token with a short expiration time.
+    """
+    expiration = timedelta(days=7)  # Access token is valid for 15 minutes
+    expire = datetime.utcnow() + expiration
+    to_encode = {"sub": user_id, "exp": expire, "type": "access"}
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
 
-def create_refresh_token(data: dict) -> str:
-    return create_token(data, TOKEN_TYPES["refresh"])
+def create_refresh_token(user_id: str) -> str:
+    """
+    Create a refresh token with a longer expiration time.
+    """
+    expiration = timedelta(days=7)  # Refresh token is valid for 7 days
+    expire = datetime.utcnow() + expiration
+    to_encode = {"sub": user_id, "exp": expire, "type": "refresh"}
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
 
 def verify_access_token(token: str) -> dict:
     return verify_token(token, TOKEN_TYPES["access"])
@@ -216,4 +232,12 @@ def clear_token_cookie(response: JSONResponse):
         secure=True, 
         samesite="Strict"
     )
+    return response
+
+
+def clear_token_cookie(response: Response) -> Response:
+    """
+    Clears the JWT cookie from the response. This ensures the client cannot send the token after logout.
+    """
+    response.delete_cookie("access_token")  # Assuming you store the token in the 'access_token' cookie
     return response
