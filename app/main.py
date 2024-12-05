@@ -31,7 +31,8 @@ app.include_router(cv.router)
 
 # CORS middleware
 allowed_origins = [
-    "https://cv-builder-frontend-six.vercel.app",  # Frontend URL
+    "https://cv-builder-frontend-six.vercel.app", # Frontend URL
+    "https://cv-builder-frontend-git-main-guy-mathieu-fokos-projects.vercel.app"
     "localhost",
 ]
 app.add_middleware(
