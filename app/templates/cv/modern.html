@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional CV</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #f4f4f4;
+            --sidebar-width: 300px;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+        }
+
+        .cv-container {
+            display: flex;
+            max-width: 1200px;
+            margin: 40px auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            padding: 40px;
+            border-right: 1px solid #eee;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            background: white;
+        }
+
+        .profile-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px;
+            display: block;
+            border: 3px solid var(--primary-color);
+        }
+
+        .contact-info {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 20px;
+            text-transform: uppercase;
+        }
+
+        .name-title {
+            font-size: 28px;
+            color: var(--text-color);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .contact-item {
+            margin-bottom: 10px;
+        }
+
+        .experience-item {
+            margin-bottom: 25px;
+        }
+
+        .experience-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .experience-date {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .skills-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .skills-list li {
+            margin-bottom: 10px;
+        }
+
+        .language-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .interests {
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .cv-container {
+                flex-direction: column;
+                margin: 0;
+            }
+
+            .sidebar {
+                width: auto;
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cv-container">
+        <aside class="sidebar">
+            <img src="/api/placeholder/200/200" alt="Profile" class="profile-image">
+            <h1 class="name-title">{{ section.content.name }}</h1>
+            
+            <div class="contact-info">
+                <h2 class="section-title">Kontakt</h2>
+                {% if section.content.location %}
+                <div class="contact-item">{{ section.content.location }}</div>
+                {% endif %}
+                {% if section.content.phone %}
+                <div class="contact-item">{{ section.content.phone }}</div>
+                {% endif %}
+                {% if section.content.email %}
+                <div class="contact-item">{{ section.content.email }}</div>
+                {% endif %}
+            </div>
+
+            {% if section.type == 'skills' %}
+            <div class="skills-section">
+                <h2 class="section-title">{{ section.title }}</h2>
+                <ul class="skills-list">
+                    {% for skill in section.content %}
+                    <li>{{ skill.name }} - {{ skill.proficiency }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if section.type == 'languages' %}
+            <div class="languages-section">
+                <h2 class="section-title">{{ section.title }}</h2>
+                {% for lang in section.content %}
+                <div class="language-item">
+                    <span>{{ lang.name }}</span>
+                    <span>{{ lang.level }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </aside>
+
+        <main class="main-content">
+            {% for section in cv.sections %}
+                {% if section.type == 'text' %}
+                <div class="section">
+                    <h2 class="section-title">{{ section.title }}</h2>
+                    <div>{{ section.content | safe }}</div>
+                </div>
+                {% endif %}
+
+                {% if section.type == 'experience' %}
+                <div class="section">
+                    <h2 class="section-title">{{ section.title }}</h2>
+                    {% for exp in section.content %}
+                    <div class="experience-item">
+                        <div class="experience-title">{{ exp.position }}{% if exp.company %} at {{ exp.company }}{% endif %}</div>
+                        <div class="experience-date">
+                            {% if exp.startDate %}
+                                {{ exp.startDate.strftime('%B %Y') }} - 
+                                {% if exp.current %}Present{% else %}{{ exp.endDate.strftime('%B %Y') }}{% endif %}
+                            {% endif %}
+                        </div>
+                        <div>{{ exp.description | safe }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if section.type == 'education' %}
+                <div class="section">
+                    <h2 class="section-title">{{ section.title }}</h2>
+                    {% for edu in section.content %}
+                    <div class="experience-item">
+                        <div class="experience-title">{{ edu.degree }} - {{ edu.institution }}</div>
+                        <div class="experience-date">
+                            {% if edu.startDate %}
+                                {{ edu.startDate.strftime('%B %Y') }} - 
+                                {% if edu.current %}Present{% else %}{{ edu.endDate.strftime('%B %Y') }}{% endif %}
+                            {% endif %}
+                        </div>
+                        <div>{{ edu.description | safe }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </main>
+    </div>
+</body>
+</html>
