@@ -1,4 +1,3 @@
-# app/middleware/auth.py
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -46,18 +45,13 @@ def get_current_user(
             raise credentials_exception
         return user
 
-    except JWTError as e:
-        if isinstance(e, jwt.ExpiredSignatureError):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has expired. Please refresh your token."
-            )
+    except JWTError:
         raise credentials_exception
 
 
 def verify_token(token: str, expected_type: str) -> dict:
     try:
-        # Decode the token and validate its type (e.g., "verification" or "access" or "refresh")
+        # Decode the token and validate its type (e.g., "verification" or "access")
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_type = payload.get("type")
         
@@ -84,5 +78,4 @@ def get_optional_user(
     try:
         return get_current_user(token, db)
     except HTTPException:
-        # Improved error handling for optional user fetching
         return None

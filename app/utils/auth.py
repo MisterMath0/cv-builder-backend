@@ -127,7 +127,7 @@ def create_access_token(user_id: str) -> str:
     """
     Create an access token with a short expiration time.
     """
-    expiration = timedelta(days=7)  # Access token is valid for 15 minutes
+    expiration = timedelta(days=15)  # Access token is valid for 15 minutes
     expire = datetime.utcnow() + expiration
     to_encode = {"sub": user_id, "exp": expire, "type": "access"}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
