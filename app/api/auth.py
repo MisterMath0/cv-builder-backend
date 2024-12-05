@@ -177,7 +177,7 @@ async def login(
         if not db_user.is_active:
             print("Error: Email not verified")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Please verify your email first"
             )
         
