@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
     # settings.py (add Redis configuration)
-    REDIS_HOST = "localhost"  # Or your Redis host if using a remote Redis instance
-    REDIS_PORT = 6379  # Default Redis port
+    REDISHOST = "redis.railway.internal"  # Or your Redis host if using a remote Redis instance
+    REDISPORT = 6379  # Default Redis port
 
     
     # Security

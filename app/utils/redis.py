@@ -7,8 +7,8 @@ from typing import Optional
 
 # Create Redis connection
 r = redis.StrictRedis(
-    host=settings.REDIS_HOST, 
-    port=settings.REDIS_PORT, 
+    host=settings.REDISHOST, 
+    port=settings.REDISPORT, 
     db=0, 
     decode_responses=True
 )
