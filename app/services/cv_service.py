@@ -4,7 +4,7 @@ import uuid
 from app.services.storage_service import S3StorageService
 from fastapi import HTTPException
 from typing import Dict, Any, List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 import logging
 from fastapi import UploadFile
 from ..models.database import CV, Section
@@ -51,11 +51,16 @@ class CVService:
             raise HTTPException(status_code=400, detail=str(e))
 
     async def get_cv(self, cv_id: str, user_id: str) -> CV:
-        """Get CV by ID"""
-        cv = self.db.query(CV).filter(
-            CV.user_id == user_id,
-            CV.id == cv_id
-        ).first()
+        """Get CV by ID, including its sections"""
+        cv = (
+            self.db.query(CV)
+            .filter(
+                CV.user_id == user_id,
+                CV.id == cv_id
+            )
+            .options(joinedload(CV.sections))  # Include related sections in the query
+            .first()
+        )
         if not cv:
             raise HTTPException(status_code=404, detail="CV not found")
         return cv

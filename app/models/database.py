@@ -27,7 +27,7 @@ class CV(Base):
 
     # Relationships
     user = relationship("User", back_populates="cvs")
-    sections = relationship("Section", back_populates="cv", cascade="all, delete-orphan")
+    sections = relationship("Section", back_populates="cv", cascade="all, delete-orphan",lazy="joined")
 class Section(Base):
     __tablename__ = "sections"
 
