@@ -135,6 +135,9 @@
     {% for section in cv.sections %}
         {% if section.type == 'contact' %}
         <div class="header">
+            {% if cv.profile_image %}
+                <img src="{{ cv.profile_image }}" alt="Profile" class="profile-image"/>
+                {% endif %}
             <h1>{{ section.content.name }}</h1>
             <div class="contact-info">
                 {% if section.content.location %}

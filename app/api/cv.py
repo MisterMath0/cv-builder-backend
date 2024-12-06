@@ -18,6 +18,7 @@ from fastapi import Depends, HTTPException
 from jose import JWTError, jwt
 from typing import Optional
 from fastapi.security import OAuth2PasswordBearer
+from fastapi import UploadFile
 
 
 router = APIRouter(prefix="/api/cv", tags=["CV"])
@@ -265,5 +266,22 @@ async def export_cv(
                 media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 headers={"Content-Disposition": "attachment; filename=cv.docx"}
             )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/upload-image")
+async def upload_image(
+    file: UploadFile,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    """Upload profile image"""
+    try:
+        cv_service = CVService(db)
+        image_url = await cv_service.upload_profile_image(
+            current_user.id,
+            file  # Pass the UploadFile directly
+        )
+        return {"image_url": image_url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -1,17 +1,36 @@
 # app/services/cv_service.py
+import os
+import uuid
+from app.services.storage_service import S3StorageService
 from fastapi import HTTPException
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 import logging
+from fastapi import UploadFile
 from ..models.database import CV, Section
 from datetime import datetime
+
 
 logger = logging.getLogger(__name__)
 
 class CVService:
     def __init__(self, db: Session):
         self.db = db
-
+   
+    async def upload_profile_image(self, user_id: str, file: UploadFile) -> str:
+        storage = S3StorageService()
+        file_data = await file.read()
+        filename = f"{user_id}_{uuid.uuid4()}{os.path.splitext(file.filename)[1]}"
+        
+        image_url = await storage.upload_file(file_data, filename)
+        
+        # Update CV with S3 URL
+        self.db.execute(
+            """UPDATE cvs SET profile_image = $1 WHERE user_id = $2""",
+            image_url, user_id
+        )
+        
+        return image_url
     async def create_cv(self, user_id: str, template_id: str) -> CV:
         """Create a new CV"""
         try:
