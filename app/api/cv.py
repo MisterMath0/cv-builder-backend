@@ -18,9 +18,12 @@ from fastapi import Depends, HTTPException
 from jose import JWTError, jwt
 from typing import Optional
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import UploadFile
+from fastapi import UploadFile, File
+import imghdr
+import logging
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/cv", tags=["CV"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="access_token")  # This URL is where the client gets the token from
 
@@ -271,17 +274,26 @@ async def export_cv(
 
 @router.post("/upload-image")
 async def upload_image(
-    file: UploadFile,
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
-    """Upload profile image"""
+    # Validate file type
+    contents = await file.read()
+    file_type = imghdr.what(None, contents)
+    if file_type not in ['jpeg', 'png', 'jpg']:
+        raise HTTPException(400, "Invalid image format")
+    
+    # Reset file pointer
+    await file.seek(0)
+    
     try:
         cv_service = CVService(db)
         image_url = await cv_service.upload_profile_image(
             current_user.id,
-            file  # Pass the UploadFile directly
+            file
         )
-        return {"image_url": image_url}
+        return {"success": True, "image_url": image_url}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Image upload failed: {str(e)}")
+        raise HTTPException(400, f"Upload failed: {str(e)}")

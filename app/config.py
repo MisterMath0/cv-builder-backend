@@ -34,9 +34,17 @@ class Settings(BaseSettings):
     MAIL_TLS: bool = True
     MAIL_SSL: bool = False
     USE_CREDENTIALS: bool = True
-
+    
+    # AWS Settings
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str 
+    AWS_BUCKET_NAME: str
+    AWS_REGION: str
+    
+    
     class Config:
         env_file = ".env"
+        env_file_encoding = 'utf-8'
         case_sensitive = True
         arbitrary_types_allowed = True
 

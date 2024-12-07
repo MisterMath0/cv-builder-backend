@@ -24,13 +24,14 @@ class CVService:
         
         image_url = await storage.upload_file(file_data, filename)
         
-        # Update CV with S3 URL
-        self.db.execute(
-            """UPDATE cvs SET profile_image = $1 WHERE user_id = $2""",
-            image_url, user_id
-        )
+        # Update using SQLAlchemy
+        cv = self.db.query(CV).filter(CV.user_id == user_id).first()
+        if cv:
+            cv.profile_image = image_url
+            self.db.commit()
         
         return image_url
+
     async def create_cv(self, user_id: str, template_id: str) -> CV:
         """Create a new CV"""
         try:

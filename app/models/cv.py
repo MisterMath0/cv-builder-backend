@@ -15,14 +15,14 @@ class CV(Base):
     template_id = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
+    profile_image = Column(String, nullable=True)
     # Relationships
     user = relationship("User", back_populates="cvs")
     sections = relationship("Section", back_populates="cv", cascade="all, delete-orphan")
 # Pydantic models for request validation
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from uuid import UUID
 
 class CVCreate(BaseModel):
@@ -36,6 +36,8 @@ class CVResponse(BaseModel):
     template_id: str
     created_at: datetime
     updated_at: datetime
+    profile_image: Optional[str] = None
+
 
     class Config:
         from_attributes = True
