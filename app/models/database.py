@@ -2,6 +2,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, JSON, DateT
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, Float
 import uuid
 from ..database import Base
 import enum
@@ -29,6 +30,8 @@ class CV(Base):
     # Relationships
     user = relationship("User", back_populates="cvs")
     sections = relationship("Section", back_populates="cv", cascade="all, delete-orphan",lazy="joined")
+    cover_letters = relationship("CoverLetter", back_populates="cv")
+
 class Section(Base):
     __tablename__ = "sections"
 
@@ -42,7 +45,25 @@ class Section(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())  # Changed this line
 
     cv = relationship("CV", back_populates="sections")
+    
+class CoverLetter(Base):
+    __tablename__ = "cover_letters"
 
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    cv_id = Column(UUID(as_uuid=True), ForeignKey("cvs.id"), nullable=True)
+    job_id = Column(UUID(as_uuid=True), nullable=True)  # For future job tracking feature
+    content = Column(Text, nullable=False)
+    job_title = Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
+    matching_score = Column(Float, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="cover_letters")
+    cv = relationship("CV", back_populates="cover_letters")
+    
 # Pydantic models for API validation
 class SectionCreate(BaseModel):
     id: UUID4  # Use UUID4 here

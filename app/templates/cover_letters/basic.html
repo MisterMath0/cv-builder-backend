@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            margin: 1in;
+        }
+        .date {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .company {
+            margin-bottom: 20px;
+        }
+        .company-name {
+            font-weight: bold;
+        }
+        .job-title {
+            margin-top: 5px;
+        }
+        .content {
+            text-align: justify;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="date">{{ date }}</div>
+    
+    {% if company_name %}
+    <div class="company">
+        <div class="company-name">{{ company_name }}</div>
+        {% if job_title %}
+        <div class="job-title">Re: {{ job_title }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div class="content">
+        {{ content | safe }}
+    </div>
+    
+    {% if author %}
+    <div class="footer">
+        {{ author }}
+    </div>
+    {% endif %}
+</body>
+</html>

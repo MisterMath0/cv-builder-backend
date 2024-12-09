@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     AWS_BUCKET_NAME: str
     AWS_REGION: str
     
+    #OpenAI APi
+    OPENAI_API_KEY: str
     
     class Config:
         env_file = ".env"

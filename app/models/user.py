@@ -17,8 +17,11 @@ class User(Base):
     is_locked = Column(Boolean, default=False)  # Track account lock status
     failed_login_attempts = Column(Integer, default=0)  # Track failed login attempts
     last_login = Column(DateTime(timezone=True), nullable=True)  # Track last successful login
+    ai_credits = Column(Integer, default=0)  # Added AI credits
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
     cvs = relationship("CV", back_populates="user", cascade="all, delete-orphan")
+    cover_letters = relationship("CoverLetter", back_populates="user")
+
