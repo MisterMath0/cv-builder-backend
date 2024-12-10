@@ -1,3 +1,4 @@
+from app.models.database import CoverLetter
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..services.ai_service import CoverLetterService
@@ -8,7 +9,7 @@ from ..models.ai_models import (
     WriteStyle
 )
 from ..models.user import User
-from ..database import get_db, CoverLetter
+from ..database import get_db
 from ..middleware.auth import get_current_user
 from typing import Optional
 from pydantic import BaseModel

@@ -1,6 +1,6 @@
 # app/main.py
 from datetime import datetime
-from app.api import cv
+from app.api import cv, cover_letter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
@@ -28,6 +28,7 @@ Base.metadata.create_all(bind=engine)
 # Include Routers
 app.include_router(auth.router)
 app.include_router(cv.router)
+app.include_router(cover_letter.router)
 
 # CORS middleware
 allowed_origins = [

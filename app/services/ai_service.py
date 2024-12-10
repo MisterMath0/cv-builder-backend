@@ -1,9 +1,9 @@
 from datetime import datetime
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import SequentialChain, LLMChain
 from langchain.output_parsers import PydanticOutputParser
-from langchain.pydantic_v1 import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator
 from typing import Dict, Optional, List
 from datetime import datetime
 from ..config import settings
