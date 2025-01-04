@@ -1,11 +1,11 @@
 from datetime import datetime
-from langchain_community.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import SequentialChain, LLMChain
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field, validator
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, cast
 from datetime import datetime
+from langchain_openai import ChatOpenAI  # Updated import
 from ..config import settings
 from ..models.ai_models import (
     JobAnalysis,
@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 class CoverLetterService:
     def __init__(self):
         self.llm_analyzer = ChatOpenAI(
-            model_name="gpt-4o-mini",
+            model_name="gpt-4o-mini",  # Make sure this matches available models
             temperature=0.2,
             api_key=settings.OPENAI_API_KEY
         )
         self.llm_writer = ChatOpenAI(
-            model_name="gpt-4o",
+            model_name="gpt-4o-mini",
             temperature=0.7,
             api_key=settings.OPENAI_API_KEY
         )
@@ -67,25 +67,33 @@ class CoverLetterService:
                 request.tone_preferences
             )
             total_tokens_used += final_draft.get("tokens_used", 0)
+            total_tokens_used = int(round(total_tokens_used))
+
+            draft_obj = CoverLetterDraft(
+                content=final_draft["content"],
+                analysis={
+                    "job_matching_score": draft.get("matching_score", 0),
+                    "key_points_covered": draft.get("points_covered", [])
+                },
+                metadata={
+                    "style": request.style,
+                    "tone": request.tone_preferences,
+                    "generation_timestamp": str(datetime.utcnow())
+                },
+                suggestions=draft.get("improvement_suggestions", [])
+            )
             
             return CoverLetterResponse(
-                draft=CoverLetterDraft(
-                    content=final_draft["content"],
-                    analysis={
-                        "job_matching_score": draft.get("matching_score", 0),
-                        "key_points_covered": draft.get("points_covered", [])
-                    },
-                    metadata={
-                        "style": request.style,
-                        "tone": request.tone_preferences,
-                        "generation_timestamp": str(datetime.utcnow())
-                    },
-                    suggestions=draft.get("improvement_suggestions", [])
-                ),
+                draft=draft_obj,
                 job_analysis=job_analysis["analysis"],
                 cv_analysis=cv_analysis["analysis"],
                 status="completed",
-                credits_used=total_tokens_used
+                credits_used=total_tokens_used,
+                content=final_draft["content"],
+                job_title=job_analysis["analysis"].position,
+                company_name=job_analysis["analysis"].company_name,
+                matching_score=float(draft.get("matching_score", 0)),
+                cv_id=request.cv_id
             )
             
         except Exception as e:
@@ -93,169 +101,199 @@ class CoverLetterService:
             raise
 
     async def _analyze_job_posting(self, job_description: str) -> Dict:
-        """Analyze job posting for key details"""
         try:
             parser = PydanticOutputParser(pydantic_object=JobAnalysis)
-            prompt = PromptTemplate(
-                template="""Analyze this job posting comprehensively:
-                {job_description}
-                
-                Extract the following with high precision:
-                1. Company name and any background information
-                2. Exact position title and level
-                3. All stated and implied requirements
-                4. Technical and soft skills needed
-                5. Company culture indicators and values
-                6. Department and reporting structure
-                7. Contact details if available
-                8. Location and work arrangement details
-                
-                Provide structured analysis following this format:
-                {format_instructions}
-                """,
-                input_variables=["job_description"],
-                partial_variables={"format_instructions": parser.get_format_instructions()}
-            )
+            
+            # Updated prompt creation syntax
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """Analyze the following job posting and extract key information:
+                    {format_instructions}
+                """),
+                ("user", "{job_description}")
+            ])
 
-            chain = LLMChain(llm=self.llm_analyzer, prompt=prompt)
-            response = await chain.arun(job_description=job_description)
-            
+            # Create the chain
+            chain = prompt | self.llm_analyzer | parser
+
+            # Execute the chain
+            response = await chain.ainvoke({
+                "job_description": job_description,
+                "format_instructions": parser.get_format_instructions()
+            })
+
             return {
-                "analysis": parser.parse(response),
-                "tokens_used": len(response.split()) * 1.3  # Approximate token count
+                "analysis": response,
+                "tokens_used": int(len(str(response).split()) * 1.3)
             }
-            
+                
         except Exception as e:
             logger.error(f"Job analysis failed: {str(e)}")
             raise
 
-    async def _analyze_cv(self, cv_content: Dict, job_analysis: JobAnalysis) -> Dict:
+    async def _analyze_cv(self, cv_content: dict, job_analysis: JobAnalysis) -> Dict:
         """Analyze CV in context of job requirements"""
         try:
-            parser = PydanticOutputParser(pydantic_object=CVAnalysis)
-            prompt = PromptTemplate(
-                template="""Analyze this CV for job matching:
-                
-                CV Content: {cv_content}
-                
-                Job Requirements:
-                Position: {position}
-                Required Skills: {required_skills}
-                Key Requirements: {key_requirements}
-                
-                Provide detailed analysis:
-                1. Most relevant experiences for this role
-                2. Skills that directly match requirements
-                3. Quantifiable achievements
-                4. Unique selling points for this position
-                5. Any gaps or areas needing emphasis
-                
-                Format requirements:
-                {format_instructions}
-                """,
-                input_variables=["cv_content", "position", "required_skills", "key_requirements"],
-                partial_variables={"format_instructions": parser.get_format_instructions()}
-            )
+            # Extract sections from dictionary
+            experiences = []
+            skills = []
+            education = []
 
-            chain = LLMChain(llm=self.llm_analyzer, prompt=prompt)
-            response = await chain.arun(
-                cv_content=cv_content,
-                position=job_analysis.position,
-                required_skills=job_analysis.required_skills,
-                key_requirements=job_analysis.key_requirements
-            )
+            # Access dictionary content directly
+            if 'experience' in cv_content:
+                for exp in cv_content['experience']:
+                    experience_text = (
+                        f"Position: {exp.get('position', '')}\n"
+                        f"Company: {exp.get('company', '')}\n"
+                        f"Description: {exp.get('description', '')}"
+                    )
+                    experiences.append(experience_text)
+
+            if 'skills' in cv_content:
+                skills_content = cv_content['skills']
+                if isinstance(skills_content, str):
+                    skills.append(skills_content)
+                elif isinstance(skills_content, list):
+                    for skill in skills_content:
+                        if isinstance(skill, dict):
+                            skills.append(skill.get('name', ''))
+                        else:
+                            skills.append(str(skill))
+
+            if 'education' in cv_content:
+                for edu in cv_content['education']:
+                    education_text = (
+                        f"Degree: {edu.get('degree', '')}\n"
+                        f"Institution: {edu.get('institution', '')}\n"
+                        f"Description: {edu.get('description', '')}"
+                    )
+                    education.append(education_text)
+
+            parser = PydanticOutputParser(pydantic_object=CVAnalysis)
+            format_instructions = parser.get_format_instructions()
+
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """You must output a JSON object with:
+                    - key_experiences: list of relevant experiences
+                    - highlighted_skills: list of matching skills
+                    - achievements: list of achievements
+                    - value_proposition: summary string
+                    - education_match: boolean
+                    - experience_level_match: boolean
+                    - skill_match_score: float between 0 and 1
+                    - experience_match_score: float between 0 and 1
+                    - overall_match_score: float between 0 and 1
+                    - match_level: string describing match quality"""),
+                ("user", """Analyze this CV content for job matching:
+                    CV Content:
+                    Experiences: {experiences}
+                    Skills: {skills}
+                    Education: {education}
+                    
+                    Job Requirements:
+                    Position: {position}
+                    Required Skills: {required_skills}
+                    Key Requirements: {key_requirements}""")
+            ])
+
+            chain = prompt | self.llm_analyzer
+            response = await chain.ainvoke({
+                "experiences": "\n\n".join(experiences),
+                "skills": ", ".join(skills),
+                "education": "\n\n".join(education),
+                "position": job_analysis.position,
+                "required_skills": ", ".join(job_analysis.required_skills),
+                "key_requirements": ", ".join(job_analysis.key_requirements)
+            })
+
+            response_content = response.content if hasattr(response, 'content') else str(response)
             
             return {
-                "analysis": parser.parse(response),
-                "tokens_used": len(response.split()) * 1.3
+                "analysis": parser.parse(response_content),
+                "tokens_used": len(str(response_content).split()) * 1.3
             }
+
         except Exception as e:
             logger.error(f"CV analysis failed: {str(e)}")
             raise ValueError(f"Failed to analyze CV: {str(e)}")
 
     async def _generate_draft(
         self, 
-        cv_analysis: CVAnalysis,
-        job_analysis: JobAnalysis,
+        cv_data: dict,  # Complete CV data
+        job_data: dict,  # Complete job data
         request: CoverLetterRequest
     ) -> Dict:
-        """Generate initial cover letter draft"""
         try:
-            style_prompts = {
-                WriteStyle.PROFESSIONAL: "formal and polished",
-                WriteStyle.CREATIVE: "innovative and engaging",
-                WriteStyle.ACADEMIC: "scholarly and detailed",
-                WriteStyle.MODERN: "dynamic and contemporary",
-                WriteStyle.TRADITIONAL: "classic and conventional"
-            }
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are a professional cover letter writer. Generate a complete, formatted cover letter 
+                using the candidate's CV data and job details. Use actual data, no placeholders."""),
+                ("user", """
+                CV Data:
+                {cv_data}
+                
+                Job Details:
+                {job_data}
+                
+                Style: {style}
+                
+                Generate a properly formatted cover letter with:
+                - Complete header (date, contact info)
+                - Professional greeting
+                - 3-4 well-structured paragraphs
+                - Professional closing
+                
+                Use \n for line breaks to ensure proper formatting.
+                """)
+            ])
 
-            # Calculate matching scores first
-            matching_result = self._calculate_matching_score(cv_analysis, job_analysis)
-            match_level = self._get_match_details(matching_result['total_score'])
+            chain = prompt | self.llm_writer
+            response = await chain.ainvoke({
+                "cv_data": cv_data,
+                "job_data": job_data,
+                "style": request.style
+            })
 
-            prompt = ChatPromptTemplate.from_template(
-                """Write a compelling cover letter with these specifications:
-                
-                Company Details:
-                Company: {company}
-                Position: {position}
-                Department: {department}
-                
-                Candidate Qualifications:
-                Key Experiences: {experiences}
-                Matching Skills: {skills}
-                Notable Achievements: {achievements}
-                Value Proposition: {value_prop}
-                
-                Style Guide:
-                Tone: {style_guide}
-                Additional Preferences: {tone_preferences}
-                
-                Writing Instructions:
-                1. Begin with a powerful opening showing company research
-                2. Draw clear parallels between experiences and job requirements
-                3. Demonstrate cultural alignment with company values
-                4. Include specific achievements with metrics
-                5. Address any potential concerns proactively
-                6. End with confident call to action
-                7. Keep length between 250-400 words
-                
-                Company Values to Emphasize: {company_values}
-                """
-            )
-
-            chain = LLMChain(llm=self.llm_writer, prompt=prompt)
-            response = await chain.arun(
-                company=job_analysis.company_name,
-                position=job_analysis.position,
-                department=job_analysis.department,
-                experiences=cv_analysis.key_experiences,
-                skills=cv_analysis.highlighted_skills,
-                achievements=cv_analysis.achievements,
-                value_prop=cv_analysis.value_proposition,
-                style_guide=style_prompts[request.style],
-                tone_preferences=request.tone_preferences,
-                company_values=job_analysis.company_values
-            )
-            
             return {
-                "content": response,
-                "tokens_used": len(response.split()) * 1.3,
-                "matching_score": matching_result['total_score'],
-                "match_level": match_level,
-                "matching_details": {
-                    "skills_match": matching_result['skills_score'],
-                    "experience_match": matching_result['experience_score'],
-                    "education_match": matching_result['education_score'],
-                    "achievement_match": matching_result['achievement_score']
-                },
-                "points_covered": self._identify_covered_points(response, job_analysis),
-                "improvement_suggestions": await self._generate_suggestions(response, job_analysis)
+                "content": response.content,
+                "tokens_used": len(response.content.split()) * 1.3
             }
-            
         except Exception as e:
             logger.error(f"Draft generation failed: {str(e)}")
             raise ValueError(f"Failed to generate draft: {str(e)}")
+
+    def _extract_contact_info(self, cv_content: dict) -> dict:
+        """Extract contact information from CV content"""
+        contact_info = {
+            'name': '',
+            'address': '',
+            'email': '',
+            'phone': ''
+        }
+        
+        try:
+            for section in cv_content:
+                if section['type'] == 'contact':
+                    content = section['content']
+                    contact_info['name'] = content.get('name', '')
+                    contact_info['address'] = content.get('location', '')
+                    contact_info['email'] = content.get('email', '')
+                    contact_info['phone'] = content.get('phone', '')
+                    break
+        except Exception as e:
+            logger.error(f"Error extracting contact info: {str(e)}")
+        
+        return contact_info
+        
+
+    def _get_style_guide(self, style: WriteStyle) -> str:
+        """Convert style enum to detailed guidelines"""
+        style_guides = {
+            WriteStyle.PROFESSIONAL: "formal, polished, business-appropriate language",
+            WriteStyle.CREATIVE: "engaging, unique voice while maintaining professionalism",
+            WriteStyle.ACADEMIC: "scholarly tone with emphasis on research and methodologies",
+            WriteStyle.MODERN: "contemporary, direct language with clear value propositions",
+            WriteStyle.TRADITIONAL: "classic business format with conventional structure"
+        }
+        return style_guides.get(style, style_guides[WriteStyle.PROFESSIONAL])
 
     async def _refine_draft(
         self,

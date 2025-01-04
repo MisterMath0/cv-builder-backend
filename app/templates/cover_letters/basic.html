@@ -3,53 +3,54 @@
 <head>
     <style>
         body {
-            font-family: Calibri, Arial, sans-serif;
+            font-family: 'Calibri', 'Arial', sans-serif;
             font-size: 11pt;
-            line-height: 1.5;
+            line-height: 1.6;
             margin: 1in;
+            color: #333;
         }
-        .date {
-            text-align: right;
-            margin-bottom: 20px;
+        .letter-header {
+            margin-bottom: 2em;
         }
-        .company {
-            margin-bottom: 20px;
+        .company-info {
+            margin-bottom: 1.5em;
         }
-        .company-name {
-            font-weight: bold;
-        }
-        .job-title {
-            margin-top: 5px;
-        }
-        .content {
+        .letter-body {
             text-align: justify;
         }
-        .footer {
-            margin-top: 20px;
-            text-align: left;
+        .letter-body p {
+            margin-bottom: 1em;
+        }
+        .signature {
+            margin-top: 2em;
+        }
+        .date {
+            margin-bottom: 2em;
         }
     </style>
 </head>
 <body>
-    <div class="date">{{ date }}</div>
-    
-    {% if company_name %}
-    <div class="company">
-        <div class="company-name">{{ company_name }}</div>
-        {% if job_title %}
-        <div class="job-title">Re: {{ job_title }}</div>
-        {% endif %}
+    <div class="letter-header">
+        <div class="date">{{ date }}</div>
+        
+        <div class="company-info">
+            {% if company_name %}
+            <div class="company-name"><strong>{{ company_name }}</strong></div>
+            {% endif %}
+            {% if job_title %}
+            <div class="job-title">Re: {{ job_title }}</div>
+            {% endif %}
+        </div>
     </div>
-    {% endif %}
-    
-    <div class="content">
+
+    <div class="letter-body">
         {{ content | safe }}
     </div>
-    
-    {% if author %}
-    <div class="footer">
+
+    <div class="signature">
+        {% if author %}
         {{ author }}
+        {% endif %}
     </div>
-    {% endif %}
 </body>
 </html>

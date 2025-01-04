@@ -48,6 +48,7 @@ async def generate_cover_letter(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    logger.debug(f"Received request data: {request.dict()}")
     """Generate a personalized cover letter"""
     try:
         # Check if user has enough credits

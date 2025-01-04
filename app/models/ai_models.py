@@ -1,5 +1,7 @@
+from datetime import datetime
+import uuid
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional
 from enum import Enum
 
 class WriteStyle(str, Enum):
@@ -49,22 +51,23 @@ class CoverLetterRequest(BaseModel):
         default_factory=list,
         description="Specific tone preferences"
     )
-
+    
 class CoverLetterDraft(BaseModel):
-    content: str = Field(..., description="Cover letter content")
-    analysis: Dict = Field(..., description="Analysis used to generate the letter")
-    metadata: Dict = Field(
-        default_factory=dict,
-        description="Additional metadata about the generation"
-    )
-    suggestions: Optional[List[str]] = Field(
-        default_factory=list,
-        description="Improvement suggestions"
-    )
+    content: str
+    analysis: Dict[str, Any]
+    metadata: Dict[str, Any]
+    suggestions: List[str]
 
 class CoverLetterResponse(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     draft: CoverLetterDraft
     job_analysis: JobAnalysis
     cv_analysis: CVAnalysis
-    status: str = Field(..., description="Generation status")
-    credits_used: int = Field(..., description="AI credits used for generation")
+    status: str
+    credits_used: int
+    content: str
+    job_title: str
+    company_name: str
+    matching_score: float
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    cv_id: Optional[str] = None

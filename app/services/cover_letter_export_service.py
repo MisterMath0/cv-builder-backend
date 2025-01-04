@@ -119,3 +119,16 @@ class CoverLetterExportService:
         except Exception as e:
             logger.error(f"DOCX generation failed: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
+        
+    def _format_content_for_html(self, content: str) -> str:
+        """Format cover letter content for HTML display"""
+        # Replace newlines with proper HTML breaks
+        formatted = content.replace('\n', '<br>')
+        
+        # Preserve paragraph spacing
+        formatted = formatted.replace('<br><br>', '</p><p>')
+        
+        # Wrap in paragraphs
+        formatted = f'<p>{formatted}</p>'
+        
+        return formatted

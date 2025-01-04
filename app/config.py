@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     AWS_REGION: str
     
     #OpenAI APi
-    OPENAI_API_KEY: str
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
     
     class Config:
         env_file = ".env"
