@@ -57,3 +57,6 @@ async def health_check():
         "service": "cv-builder-api",
         "database": "connected"
     }
+@app.get("/test-cors")
+async def test_cors():
+    return {"message": "CORS is working"}
